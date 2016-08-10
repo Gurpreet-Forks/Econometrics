@@ -1,0 +1,373 @@
+---
+title: "Chapter1"
+author: "Neville Andrade"
+date: "3 August 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### U.S. Egg production
+
+```{r eggs, tidy=TRUE}
+
+egg_prod <- read.table(file = "https://raw.githubusercontent.com/cablegui/Econometrics/master/OriginalData/Table%201.1.txt",
+                       skip = 7, header =TRUE)
+
+colnames(egg_prod)
+
+head(egg_prod)
+
+```
+
+<br>
+
+#### Desription of data set
+#### ======================
+
+Data set shows U.S. egg production and egg prices for 50 U.S. states for 1990 and 1991. This is an example of cross-sectional data. Cross-sectional data is data collected on one or more variables at the same point in time. This data set has two cross-sectional data, for 1990 and 1991. The variables are the amount of eggs (in millions) and the price per dozen (in cents).  
+
+STATE -- The short code for the state within the U.S. union  
+Y1    -- Eggs produced in 1990 (millions)  
+Y2    -- Eggs produced in 1991 (millions)  
+X1    -- Price per dozen (cents) in 1990  
+X2    -- Price per dozen (cents) in 1991  
+
+```{r egg-plot, out.width='49%', fig.align="center", fig.show="hold",fig.cap="Fig 1. U.S. egg production plots"}
+library(ggplot2)
+
+ggplot(egg_prod, aes(x=Y1, y=X1)) + geom_point() + 
+  ylab("Price per dozen (cents) in 1990") +
+  xlab("Eggs produced in 1990 (millions)")
+
+ggplot(egg_prod, aes(x=Y2, y=X2)) + geom_point() +
+ylab("Price per dozen (cents) in 1991") +
+  xlab("Eggs produced in 1991 (millions)")
+
+
+```
+
+#### Exercise 1.1
+
+<br>
+
+Table 1.2 gives data on the Consumer Price Index (CPI) for seven industrialized countries with 1982-1984 = 100 as base of the index.  
+a. From the given data, compute the inflation rate of each country.  
+b. Plot the inflation rate for each country against time (i.e. use the horizantal axis for time and the vertical axis for the inflation rate)  
+c. What broad conclusions can you draw abou the inflation experience in the seven countries?  
+d. Which countries inflation seems to be most variable? Can you offer any explanation?  
+
+```{r cpi, tidy=TRUE}
+
+## Note here I have to skip several rows and add column names. Have a look at the raw data.
+## Column names are c("Year", "Canada", "France",  "Germany",  "Italy","Japan", "UK", "US")
+
+
+cpi <- read.table("https://raw.githubusercontent.com/cablegui/Econometrics/master/OriginalData/Table%201.2.txt",
+                  skip=6, col.names=c("Year", "Canada", "France",  "Germany",  "Italy","Japan", "UK", "US"))
+
+colnames(cpi)
+
+head(cpi)
+
+```
+
+#### What does the data contain?
+
+The data consists of the following
+
+CPI in seven industrialized countries,
+1973-1997, (1982-1984=100)
+
+What is the 'Consumer Price Index - CPI'
+
+The Consumer Price Index (CPI) is a measure that examines the weighted average of prices of a basket of consumer goods and services, such as transportation, food and medical care. It is calculated by taking price changes for each item in the predetermined basket of goods and averaging them. Changes in the CPI are used to assess price changes associated with the cost of living; the CPI is one of the most frequently used statistics for identifying periods of inflation or deflation. 
+
+
+Read more: Consumer Price Index (CPI) Definition | Investopedia http://www.investopedia.com/terms/c/consumerpriceindex.asp#ixzz4GOagNNqA 
+
+#### A useful package here would be the zoo package to perform time series calculations
+
+#### a. From the given data, compute the inflation rate of each country.
+
+```{r 1.1.a, tidy=TRUE,echo=TRUE}
+library(zoo)
+
+cpi_ts <- zoo(data.frame(cpi[,2:ncol(cpi)]),as.Date(paste0(cpi$Year,"-01-01"), format="%Y-%m-%d"))
+
+index(cpi_ts)
+
+coredata(cpi_ts)
+
+inflt_Rate <- (diff(cpi_ts)/lag(cpi_ts,k=-1))*100
+
+```
+
+#### b. Plot the inflation rate for each country against time (i.e. use the horizantal axis for time and the vertical axis for the inflation rate)
+
+
+```{r 1.1.b, tidy=TRUE,echo=TRUE}
+library(ggplot2)
+library(tidyr)
+
+# reshape the data
+t <- data.frame(Date = index(inflt_Rate),as.data.frame.ts(inflt_Rate))
+t <- gather(t,"country", "inflation_rate", -Date)
+
+
+ggplot(t, aes(x=Date, y=inflation_rate, colour=country)) + geom_line()
+
+```
+
+#### c. What broad conclusions can you draw about the inflation experience in the seven countries?
+
+<br>
+A: There is a downward trend with time.
+
+#### d. Which countries inflation seems to be most variable? Can you offer any explanation?
+
+```{r 1.1.d, tidy=TRUE, echo=TRUE}
+# Apply a function on groups of data. tapply will apply the function sd (standard deviation) to the inflation rate 
+# grouped by country and report the country
+
+tapply(t$inflation_rate, t$country, sd)
+
+```
+
+A: _Italy_ seems to be the most variable, because its standard deviation is the largest amongst all countries
+
+
+# Exercise 1.2
+
+<br>
+
+a. Plot the inflation rate of Canada, France, Germany, Italy, Japan and the UK against the US inflation rate.  
+b. Comment generally about the behaviour of the inflation rate in the six countries vis-a-vis the US inflation rate.  
+c. If you find that the six countries inflation rate move in the same direction as the US inflation rate would that suggest that the US inflation causes inflation in the other countries? Why or why not?  
+
+
+#### a. Plot the inflation rate of Canada, France, Germany, Italy, Japan and the UK against the US inflation rate.  
+
+```{r 1.2.a}
+
+# convert to wide format
+tSpread <- spread(t,country, inflation_rate)
+
+ggplot(data=tSpread)+ 
+      geom_point(aes(x=tSpread[,c("Canada")], y=tSpread[,c("US")], shape="Canada"))+
+      geom_point(aes(x=tSpread[,c("France")], y=tSpread[,c("US")],shape="France")) +
+      geom_point(aes(x=tSpread[,c("Germany")], y=tSpread[,c("US")],shape="Germany")) +
+      geom_point(aes(x=tSpread[,c("Italy")], y=tSpread[,c("US")],shape="Italy")) +
+      geom_point(aes(x=tSpread[,c("Japan")], y=tSpread[,c("US")],shape="Japan")) +
+      geom_point(aes(x=tSpread[,c("UK")], y=tSpread[,c("US")],shape="UK")) +
+        labs(shape="Countries")+ #Use labs(aesthetic= "name you want for legend"); where aesthetic can be linetype or shape or colour
+  ylab("") + xlab("") + ggtitle("Inflation rate of US versus \n Canada, France, Germany, Italy, Japan and the UK")
+
+```
+
+
+#### b. Comment generally about the behaviour of the inflation rate in the six countries vis-a-vis the US inflation rate.  
+
+A: The behaviour shows that all the countries have different degrees of positive correlation with U.S.
+
+
+#### c. If you find that the six countries inflation rate move in the same direction as the US inflation rate would that suggest that the US inflation causes inflation in the other countries? Why or why not?  
+
+A: It may or may not in my view as the data is too less to make a certain statement. We need more data to disprove the hypothesis that U.S. inflation rate can cause inflation in other countries.
+
+
+# Exercise 1.3
+
+Table 1.3 gives the foreign exchange rates for seven industrialized countries for years 1977-1998. Except for the United Kingdom, the exchange rate is defined as the number of U.S. dollars for one U.K. pound.  
+
+a. Plot these exchange rates against time and comment on the general behaviour of the exchange rates over the given time period.  
+b. The dollar is said to appreciate if it can buy more units of a foreign currency. Contrarily, it is said to depreciate if it buys fewer units of a foreign currency. Over the time period 1977-1998, what has been the general behaviour of the U.S. dollar? Incidentally look up any text book on macroeconmics or international economics to find out what factors determine the appreciation or depreciation of a currency.  
+
+```{r exchangerates, tidy=TRUE}
+
+exchangeRates <- read.table("https://raw.githubusercontent.com/cablegui/Econometrics/master/OriginalData/Table%201.3.txt",
+                  skip=5, col.names=c("Year", "Canada",	"France",	"Germany",	"Japan",	"Sweden",	"Switzer", "UK"))
+
+# check if all the data has been captured
+
+head(exchangeRates)
+tail(exchangeRates)
+
+```
+
+
+#### a. Plot these exchange rates against time and comment on the general behaviour of the exchange rates over the given time period.
+
+```{r}
+
+exchangeRatesTS <- zoo(data.frame(exchangeRates[,2:ncol(exchangeRates)]),as.Date(paste0(exchangeRates$Year,"-01-01"), format="%Y-%m-%d"))
+
+index(exchangeRatesTS)
+
+# reshape the data
+t <- data.frame(Date = index(exchangeRatesTS),as.data.frame.ts(exchangeRatesTS))
+t <- gather(t,"country", "exchangeRate", -Date)
+
+
+ggplot(t, aes(x=Date, y=exchangeRate)) + geom_line() + facet_grid(country~., scales = "free")
+
+
+```
+
+A: There appears to be an increase in the exchange rate till 1985 after which generally all countries exchange rates have fallen except maybe Sweden and Canada.
+
+#### b. The dollar is said to appreciate if it can buy more units of a foreign currency. Contrarily, it is said to depreciate if it buys fewer units of a foreign currency. Over the time period 1977-1998, what has been the general behaviour of the U.S. dollar? Incidentally look up any text book on macroeconmics or international economics to find out what factors determine the appreciation or depreciation of a currency.  
+
+A: To answer b. I had to look up the web as I dont have experience on this topic. One web source whose explanations made some sense was investopedia. I have no intentions to plagiarise the content on investopedia so the links to these web extracts are clearly defined in my blog.
+
+#### Causes of a Nation's Currency Appreciation or Depreciation  
+
+Factors that can cause a nation's currency to appreciate or depreciate include:
+
+- Relative Product Prices - If a country's goods are relatively cheap, foreigners will want to buy those goods. In order to buy those goods, they will need to buy the nation's currency. Countries with the lowest price levels will tend to have the strongest currencies (those currencies will be appreciating).
+
+- [Monetary Policy](#tag_monPol) - Countries with expansionary (easy) monetary policies will be increasing the supply of their currencies, which will cause the currency to depreciate. Those countries with restrictive (hard) monetary policies will be decreasing the supply of their currency and the currency should appreciate. Note that exchange rates involve the currencies of two countries. If a nation's central bank is pursuing an expansionary monetary policy while its trading partners are pursuing monetary policies that are even more expansionary, the currency of that nation is expected to appreciate relative to the currencies of its trading partners.
+
+- Inflation Rate Differences - Inflation (deflation) is associated with currency depreciation (appreciation). Suppose the price level increases by 40% in the U.S., while the price levels of its trading partners remain relatively stable. U.S. goods will seem very expensive to foreigners, while U.S. citizens will increase their purchase of relatively cheap foreign goods. The U.S. dollar will depreciate as a result. If the U.S. inflation rate is lower than that of its trading partners, the U.S. dollar is expected to appreciate. Note that exchange rate adjustments permit nations with relatively high inflation rates to maintain trade relations with countries that have low inflation rates.
+
+- Income Changes - Suppose that the income of a major trading partner with the U.S., such as Great Britain, greatly increases. Greater domestic income is associated with an increased consumption of imported goods. As British consumers purchase more U.S. goods, the quantity of U.S. dollars demanded will exceed the quantity supplied and the U.S. dollar will appreciate. 
+
+Read more: Currency Appreciation and Depreciation - CFA Level 1 | Investopedia http://www.investopedia.com/exam-guide/cfa-level-1/global-economic-analysis/foreign-exchange-parity-influences.asp#ixzz4GXbi9aaS 
+
+#### Some economic terms. From Investopedia 
+
+Trade deficits - This number "is a result of the economy" and not "is a cause". This occurs when there is an increase in the demand for imported goods by country A but there is no or little demand from foreign countries for the exported goods from country A. This often indicates that the economy is growing faster than the foreign countries.
+
+Budget deficits - This number tells you more about government expenditure versus income rather than individual or company expenditure versus income. Government expenses come thru financing activities like war or financing public medical insurance schemes. The investment in war for example by the U.S did not seem to benefit US in any way and rather in my opinion caused a lot of problems for other countries as well. The investment in the medical insurance scheme I rather see as a big benefit to the U.S. people. A country or business experiencing budget deficits due to building infrastructure or making profitable investments that will generate higher revenue or taxes in the future are often considered healthier like India than entities experiencing deficits due to unsustainable expenses. If there is a deficit the government needs to borrow to pay for the expenses as there is not enough income to pay for it.
+
+Typical factors that contribute to a government budget deficit are:  slower economic growth than trading partners, high governmental spending, high unemployment rates, or a combination of these factors.
+
+<a name="tag_monPol"></a> Monetary policy - Monetary policy consists of the actions of a central bank, currency board or other regulatory committee that determine the size and rate of growth of the money supply, which in turn affects interest rates. Monetary policy is maintained through actions such as modifying the interest rate, buying or selling government bonds, and changing the amount of money banks are required to keep in the vault (bank reserves). Broadly, there are two types of monetary policy, expansionary and contractionary.
+
+Expansionary puts money into the economy whereas contractionary sucks it out. Putting more money into an economy will allow private companies to borrow at lower rates and invest in making products which in turn makes the economy buy these products thereby allowing competition by companies within the economy to create better products and higher prices **thereby increasing inflation** in the economy. This has the added effect that when companies invest more into the business then employment increases.
+
+Expansionary monetary policy increases the money supply in order to lower unemployment, boost private-sector borrowing and consumer spending, and stimulate economic growth. Often referred to as "easy monetary policy," this description applies to many central banks since the 2008 financial crisis, as interest rates have been low and in many cases near zero. 
+
+Contractionary monetary policy slows the rate of growth in the money supply or outright decreases the money supply in order to control inflation; while sometimes necessary, contractionary monetary policy can slow economic growth, increase unemployment and depress borrowing and spending by consumers and businesses. An example would be the Federal Reserve's intervention in the early 1980s: in order to curb inflation of nearly 15%, the Fed raised its benchmark interest rate to 20%. This hike resulted in a recession, but did keep spiraling inflation in check.
+
+Central banks use a number of tools to shape monetary policy. Open market operations directly affect the money supply through buying short-term government bonds (to expand money supply) or selling them (to contract it). Benchmark interest rates, such as the LIBOR and the Fed funds rate, affect the demand for money by raising or lowering the cost to borrow—in essence, money's price. When borrowing is cheap or when the cost to borrow (i.e. LIBOR or Fed funds rate is low) thereby incresing money supply, firms will take on more debt to invest in hiring and expansion; consumers will make larger, long-term purchases with cheap credit; and savers will have more incentive to invest their money in stocks or other assets, rather than earn very little—and perhaps lose money in real terms—through savings accounts. This is why the stock market goes up. Policy makers also manage risk in the banking system by mandating the reserves that banks must keep on hand. Higher reserve requirements put a damper on lending and rein in inflation.
+
+Quantitative easing - An unconventional method of policy where the goverenment increases money supply by purchasing varying financial assets from commercial banks. In the US, the Fed loaded its balance sheet with trillions of dollars in Treasury notes and mortgage-backed securities between 2008 and 2013. The Bank of England, the European Central Bank and the Bank of Japan have pursued similar policies. The effect of quantitative easing is to raise the price of securities, therefore lowering their yields, as well as to increase total money supply. Credit easing is a related unconventional monetary policy tool, involving the purchase of private-sector assets to boost liquidity. Finally, signaling is the use of public communication to ease markets' worries about policy changes: for example, a promise not to raise interest rates for a given number of quarters.
+
+Central banks are often, at least in theory, independent from other policy makers. This is the case with the Federal Reserve and Congress, reflecting the separation of monetary policy from fiscal policy. The latter refers to taxes and government borrowing and spending.
+
+The Federal Reserve has what is commonly referred to as a "dual mandate": to achieve maximum employment (in practice, around 5% unemployment) and stable prices (2-3% inflation). In addition, it aims to keep long-term interest rates relatively low, and since 2009 has served as a bank regulator. Its core role is to be the lender of last resort, providing banks with liquidity in order to prevent the bank failures and panics that plagued the US economy prior to the Fed's establishment in 1913. In this role, it lends to eligible banks at the so-called discount rate, which in turn influences the Federal funds rate (the rate at which banks lend to each other) and interest rates on everything from savings accounts to student loans, mortgages and corporate bonds.
+
+
+Read more: Monetary Policy Definition | Investopedia http://www.investopedia.com/terms/m/monetarypolicy.asp#ixzz4GXi10s1e 
+
+#### What is GDP? From Investopedia
+
+The gross domestic product (GDP) is one of the primary indicators used to gauge the health of a country's economy. It represents the total dollar value of all goods and services produced over a specific time period; you can think of it as the size of the economy. Usually, GDP is expressed as a comparison to the previous quarter or year. For example, if the year-to-year GDP is up 3%, this is thought to mean that the economy has grown by 3% over the last year.
+
+Measuring GDP is complicated (which is why we leave it to the economists), but at its most basic, the calculation can be done in one of two ways: either by adding up what everyone earned in a year (income approach), or by adding up what everyone spent (expenditure method). Logically, both measures should arrive at roughly the same total.
+
+The income approach, which is sometimes referred to as GDP(I), is calculated by adding up total compensation to employees, gross profits for incorporated and non incorporated firms, and taxes less any subsidies. The expenditure method is the more common approach and is calculated by adding total consumption, investment, government spending and net exports.
+
+As one can imagine, economic production and growth, what GDP represents, has a large impact on nearly everyone within that economy. For example, when the economy is healthy, you will typically see low unemployment and wage increases as businesses demand labor to meet the growing economy. A significant change in GDP, whether up or down, usually has a significant effect on the stock market. It's not hard to understand why: a bad economy usually means lower profits for companies, which in turn means lower stock prices. Investors really worry about negative GDP growth, which is one of the factors economists use to determine whether an economy is in a recession.
+
+
+Read more: What is GDP and why is it so important? | Investopedia http://www.investopedia.com/ask/answers/199.asp#ixzz4GY6ToqcU 
+
+##### 
+
+
+
+#### Exercise 1.4
+
+The data behind the M1 money supply in Figure 1.5 are given in Table 1.4. Can you give reasons why the money supply has been increasing over the time period shown in the table?
+
+#### Seasonally adjusted M1 Money supply,monthly,1959:01-1999:09
+
+```{r 1.4}
+
+moneySupplyM1 <- read.table("https://raw.githubusercontent.com/cablegui/Econometrics/master/OriginalData/Table%201.4.txt",skip = 3, col.names = c("M1_SUPPLY"))
+
+head(moneySupplyM1)
+tail(moneySupplyM1)
+
+
+# Add dates column separated by  month
+moneySupplyM1$Date <- seq(as.Date("1959-01-01"), as.Date("1999-09-01"), by = "1 month")
+
+head(moneySupplyM1)
+tail(moneySupplyM1)
+
+require(dplyr)
+require(ggplot2)
+moneySupplyM1 %>% ggplot(aes(x=Date, y=M1_SUPPLY)) + geom_line() + ggtitle("Seasonally adjusted M1 Money supply,monthly,\n1959:01-1999:09")
+
+```
+
+#### What is the M1 money supply? 
+
+Its the amount of physical money in the form of notes or coins that **are in circulation**. Does not include money in savings accounts. Its the most liquid form of money that can be quickly converted to cash.
+
+In the data for the M1 money supply there is a steady increase from 1959 to 1999 suggesting that
+
+- the government is printing more money
+- there must be an increase in population requiring money to be pumped into the economy
+- This could point to inflation as when the prices of goods increases more money is required to purchase the goods.
+
+#### Exercise 1.5 
+
+Suppose you were to develop an economic model of criminal activities, say, the hours spent in criminal activities (e.g. selling illegal drugs). What variables would you consider in developing a model? See if your model matches the one developed by Nobel Laurete economis Gary Becker.
+
+A: I would consider  
+- Wages
+- Household income
+- Number of children born out of wedlock
+- No of children dropping out of school
+- No of children enrolling in college
+
+#### Exercise 1.6
+
+Controlled experiments in economics: On April 7, 2000, President Clinton signed into law a bill passed by both Houses of the U.S. Congress that lifted earnings limitations on Social Security recipients. Until then, recipients between the ages of 65 and 69 who earned more than $17,000 a year would lose 1 dollars worth of Social Security benefit for every 3 dollars of income earned in excess of $17,000. How would you devise a study to assess the impact of this change in the law? Note: There was no income limitation for the recipients over the age of 70 under the old law.
+
+A: What I understand about social security is that it is a government program to benefit people during retirement, disability or medical care. The amount paid out is a function of the persons past wages subject to a max ceiling value. As per the law before April 7 2000, people between the age of 65 to 69 earning above this max ceiling would lose 1 dollar worth of social security benfit for each 3 dollars above $17,000 they earned in the past. According to the solutions manual it suggests to collect data on the number of senior citizens who take up work during this age period. If there is an increase then it suggests that the old law was the reason for the citizens to not work. It also suggests to find out what kind of work do citizens at that age actually do.
+
+#### Exercise 1.7
+
+The data presented in Table 1.5 was published in the March 1, 1984 issue of the Wall Street Journal. It relates to the advertising budget (in millions of dollars) of 21 firms for 1983 and millions of impressions retained per week by the viewers of products of these firms. The data are based on a survey of 4000 adults in which users of the product were asked to cite a commercial they had seen for the product category in the past week.
+
+a. Plot impressions on the vertical axis and advertising expenditure on the horizontal axis.
+b. What can you say about the nature of the relationship between the two variables?
+c. Looking at your graph, do you think it pays to advertise? Think about all those commercials shown on Super Bowl Sunday or during teh World Series.
+
+```{r 1.7}
+
+advertImpress <- read.table("https://raw.githubusercontent.com/cablegui/Econometrics/master/OriginalData/Table%201.5.5.txt", skip=4, header= TRUE)
+
+head(advertImpress)
+tail(advertImpress)
+
+```
+Table 1.5 Impact of Advertising Expenditure
+
+#### a. Plot impressions on the vertical axis and advertising expenditure on the horizontal axis.
+#### b. What can you say about the nature of the relationship between the two variables?
+#### c. Looking at your graph, do you think it pays to advertise? Think about all those commercials shown on Super Bowl Sunday or during teh World Series.
+
+```{r 1.5.a}
+
+require(dplyr)
+require(ggplot2)
+
+advertImpress %>% ggplot(aes(x=ADEXP, y=IMPRESSION)) + geom_point(colour="blue")
+
+```
+
+A: There does seem to be some positive correlation between the advert expenditure and the amount of retention of these adverts but not always the case. Possibly the retention depends on the circumstances of the individual or even the impact of the advertisement.
+
+
+
+
+
+
