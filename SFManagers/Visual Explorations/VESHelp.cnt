@@ -1,0 +1,22 @@
+:Base VESHelp.hlp
+:Title Visual Explorations in Statistics Help
+1 Introduction=Introduction
+1 Descriptive Statistics
+2 Descriptive Statistics=Descriptive_Statistics
+2 Descriptive Statistics Problem Definition=Descriptive_Statistics_Problem_Definition
+2 Descriptive Statistics User Instructions=Descriptive_Statistics_User_Instructions
+1 Normal Distribution
+2 Normal Distribution=Normal_Distribution
+2 Normal Distribution Problem Definition=Normal_Distribution_Problem_Definition
+2 Normal Distribution User Instructions=Normal_Distribution_User_Instructions
+2 Suggested Example=Suggested_Example
+1 Simple Linear Regression
+2 Simple Linear Regression=Simple_Linear_Regression
+2 Simple Linear Regression Problem Definition=Simple_Linear_Regression_Problem_Definition
+2 Simple Linear Regression User Instructions=Simple_Linear_Regression_User_Instructions
+1 Simple Linear Regression (your data)
+2 Simple Linear Regression (your data)=Simple_Linear_Regression_your_own_data
+2 Simple Linear Regression (your data) User Instructions=Simple_Linear_Regression_your_own_data_User_Instructions
+1 Two-Dice Probability
+2 Two-Dice Probability=Two_Dice_Probability
+2 Two-Dice Probability User Instructions=Two_Dice_Probability_User_Instructions
